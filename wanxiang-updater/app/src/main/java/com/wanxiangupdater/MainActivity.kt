@@ -21,6 +21,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -818,19 +819,74 @@ fun WanxiangDownloaderApp() {
                 onClick = { selectedTabIndex = 2 },
                 text = { Text("拼音工具", fontWeight = FontWeight.Bold) }
             )
+            Tab(
+                selected = selectedTabIndex == 3,
+                onClick = { selectedTabIndex = 3 },
+                text = { Text("高级设置", fontWeight = FontWeight.Bold) }
+            )
         }
 
         if (selectedTabIndex == 0) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState())
-                    .weight(1f)
-            ) {
-                Text("📱 万象拼音更新器", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MorandiDarkGreen)
-                Text("v$localVersionName • 全功能终极版", fontSize = 12.sp, color = Color.Gray)
-                Spacer(modifier = Modifier.height(16.dp))
+            // 资源名与下载地址（提前计算，供 LazyColumn 各 item 使用）
+                val schemaFileName = when (schemeType) {
+                    "pro" -> "rime-wanxiang-$auxScheme-fuzhu.zip"
+                    "lite" -> "rime-wanxiang-lite.zip"
+                    "pure" -> "rime-wanxiang-pure.zip"
+                    else -> "rime-wanxiang-base.zip"
+                }
+                val dictFileName = when (schemeType) {
+                    "pro" -> "pro-$auxScheme-fuzhu-dicts.zip"
+                    "lite" -> "lite-dicts.zip"
+                    "pure" -> "pure-dicts.zip"
+                    else -> "base-dicts.zip"
+                }
+                val githubSchemaUrl = if (updateChannel == "Stable") {
+                    "https://github.com/amzxyz/rime-wanxiang/releases/latest/download/$schemaFileName"
+                } else {
+                    "https://github.com/amzxyz/rime-wanxiang/releases/download/dict-nightly/$schemaFileName"
+                }
+                val githubDictUrl = "https://github.com/amzxyz/rime-wanxiang/releases/download/dict-nightly/$dictFileName"
+                val githubModelUrl = "https://github.com/amzxyz/RIME-LMDG/releases/download/LTS/wanxiang-lts-zh-hans.gram"
+                val cnbSchemaUrl = if (updateChannel == "Stable") {
+                    "https://cnb.cool/amzxyz/rime-wanxiang/-/releases/latest/download/$schemaFileName"
+                } else {
+                    "https://cnb.cool/amzxyz/rime-wanxiang/-/releases/download/v1.0.0/$schemaFileName"
+                }
+                val cnbDictUrl = "https://cnb.cool/amzxyz/rime-wanxiang/-/releases/download/v1.0.0/$dictFileName"
+                val cnbModelUrl = "https://cnb.cool/amzxyz/rime-wanxiang/-/releases/download/model/wanxiang-lts-zh-hans.gram"
+                val schemaUrl = if (downloadSource == DOWNLOAD_SOURCE_CNB) cnbSchemaUrl else githubSchemaUrl
+                val dictUrl = if (downloadSource == DOWNLOAD_SOURCE_CNB) cnbDictUrl else githubDictUrl
+                val modelUrl = if (downloadSource == DOWNLOAD_SOURCE_CNB) cnbModelUrl else githubModelUrl
+                val githubProbeUrls = if (downloadSource == DOWNLOAD_SOURCE_CNB) {
+                    mapOf(
+                        cnbSchemaUrl to githubSchemaUrl,
+                        cnbDictUrl to githubDictUrl,
+                        cnbModelUrl to githubModelUrl
+                    )
+                } else {
+                    emptyMap()
+                }
+                val tasksMap = listOf(
+                    "🚀 全量更新" to listOf(schemaUrl, dictUrl, modelUrl),
+                    "⚙️ 仅方案" to listOf(schemaUrl),
+                    "📖 仅词库" to listOf(dictUrl),
+                    "🧠 仅模型" to listOf(modelUrl)
+                )
 
+            LazyColumn(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+            ) {
+                item(key = "c0") {
+                Text("📱 万象拼音更新器", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MorandiDarkGreen)
+                }
+                item(key = "c1") {
+                Text("v$localVersionName • 全功能终极版", fontSize = 12.sp, color = Color.Gray)
+                }
+                item(key = "c2") {
+                Spacer(modifier = Modifier.height(16.dp))
+                }
+                item(key = "c3") {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     border = CardDefaults.outlinedCardBorder(true),
@@ -889,7 +945,8 @@ fun WanxiangDownloaderApp() {
                         }
                     }
                 }
-
+                }
+                item(key = "c4") {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MorandiLightGreen),
                     border = CardDefaults.outlinedCardBorder(true),
@@ -978,8 +1035,11 @@ fun WanxiangDownloaderApp() {
                         }
                     }
                 }
+                }
+                item(key = "c5") {
                 Spacer(modifier = Modifier.height(12.dp))
-
+                }
+                item(key = "c6") {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     border = CardDefaults.outlinedCardBorder(true),
@@ -1029,9 +1089,11 @@ fun WanxiangDownloaderApp() {
                         }
                     }
                 }
+                }
+                item(key = "c7") {
                 Spacer(modifier = Modifier.height(12.dp))
-
-                // 恢复旧版 CNB / GitHub 双入口，彻底移除代理路线与测速逻辑。
+                }
+                item(key = "c8") {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     border = CardDefaults.outlinedCardBorder(true),
@@ -1092,64 +1154,11 @@ fun WanxiangDownloaderApp() {
                         )
                     }
                 }
+                }
+                item(key = "c9") {
                 Spacer(modifier = Modifier.height(16.dp))
-
-                // 四种方案独立映射；Lite/Pure 不再复用 Base 的资源名。
-                val schemaFileName = when (schemeType) {
-                    "pro" -> "rime-wanxiang-$auxScheme-fuzhu.zip"
-                    "lite" -> "rime-wanxiang-lite.zip"
-                    "pure" -> "rime-wanxiang-pure.zip"
-                    else -> "rime-wanxiang-base.zip"
                 }
-                val dictFileName = when (schemeType) {
-                    "pro" -> "pro-$auxScheme-fuzhu-dicts.zip"
-                    "lite" -> "lite-dicts.zip"
-                    "pure" -> "pure-dicts.zip"
-                    else -> "base-dicts.zip"
-                }
-
-                // 下载通道严格分离：
-                // 1) 正式方案永远取最新 Release（不使用词库/预览滚动 tag）；
-                // 2) 预览方案与词库共用滚动发布：GitHub=dict-nightly，CNB=v1.0.0；
-                // 3) 模型维持各自固定 LTS/model 发布。
-                val githubSchemaUrl = if (updateChannel == "Stable") {
-                    "https://github.com/amzxyz/rime-wanxiang/releases/latest/download/$schemaFileName"
-                } else {
-                    "https://github.com/amzxyz/rime-wanxiang/releases/download/dict-nightly/$schemaFileName"
-                }
-                val githubDictUrl = "https://github.com/amzxyz/rime-wanxiang/releases/download/dict-nightly/$dictFileName"
-                val githubModelUrl = "https://github.com/amzxyz/RIME-LMDG/releases/download/LTS/wanxiang-lts-zh-hans.gram"
-
-                val cnbSchemaUrl = if (updateChannel == "Stable") {
-                    "https://cnb.cool/amzxyz/rime-wanxiang/-/releases/latest/download/$schemaFileName"
-                } else {
-                    "https://cnb.cool/amzxyz/rime-wanxiang/-/releases/download/v1.0.0/$schemaFileName"
-                }
-                val cnbDictUrl = "https://cnb.cool/amzxyz/rime-wanxiang/-/releases/download/v1.0.0/$dictFileName"
-                val cnbModelUrl = "https://cnb.cool/amzxyz/rime-wanxiang/-/releases/download/model/wanxiang-lts-zh-hans.gram"
-
-                val schemaUrl = if (downloadSource == DOWNLOAD_SOURCE_CNB) cnbSchemaUrl else githubSchemaUrl
-                val dictUrl = if (downloadSource == DOWNLOAD_SOURCE_CNB) cnbDictUrl else githubDictUrl
-                val modelUrl = if (downloadSource == DOWNLOAD_SOURCE_CNB) cnbModelUrl else githubModelUrl
-
-                // 仅 CNB 模式使用：实际下载前向对应 GitHub 资源发 4 字节静默 GET。
-                val githubProbeUrls = if (downloadSource == DOWNLOAD_SOURCE_CNB) {
-                    mapOf(
-                        cnbSchemaUrl to githubSchemaUrl,
-                        cnbDictUrl to githubDictUrl,
-                        cnbModelUrl to githubModelUrl
-                    )
-                } else {
-                    emptyMap()
-                }
-
-                val tasksMap = listOf(
-                    "🚀 全量更新" to listOf(schemaUrl, dictUrl, modelUrl),
-                    "⚙️ 仅方案" to listOf(schemaUrl),
-                    "📖 仅词库" to listOf(dictUrl),
-                    "🧠 仅模型" to listOf(modelUrl)
-                )
-
+                item(key = "c10") {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     border = CardDefaults.outlinedCardBorder(true),
@@ -1282,8 +1291,11 @@ fun WanxiangDownloaderApp() {
                         }
                     }
                 }
+                }
+                item(key = "c11") {
                 Spacer(modifier = Modifier.height(12.dp))
-
+                }
+                item(key = "c12") {
                 AnimatedVisibility(visible = mainActiveTasks.isNotEmpty()) {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MorandiLightGreen),
@@ -1315,7 +1327,7 @@ fun WanxiangDownloaderApp() {
                         }
                     }
                 }
-
+                }
             }
         } else if (selectedTabIndex == 1) {
             CustomModeTab(
@@ -1333,8 +1345,10 @@ fun WanxiangDownloaderApp() {
                 githubToken = githubToken,
                 onRequestAllFilesAccess = { showPermissionDialog = true }
             )
-        } else {
+        } else if (selectedTabIndex == 2) {
             PinyinToolScreen()
+        } else {
+            AdvancedSettingsScreen()
         }
     }
 }

@@ -6,17 +6,25 @@ plugins {
 
 android {
     namespace = "com.wanxiangupdater"
-    compileSdk = 34
+    compileSdk = 35
+    buildToolsVersion = "35.0.0"
 
     defaultConfig {
         applicationId = "com.wanxiangupdater"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "2.2"
+        versionCode = 2
+        versionName = "2.3"
 
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")
+        }
+    }
+
+    packaging {
+        // 16KB 页面：未压缩的 .so 需要按 16KB 对齐后才能直接 mmap。
+        jniLibs {
+            useLegacyPackaging = false
         }
     }
 
@@ -34,10 +42,18 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            if (System.getenv("KEYSTORE_FILE") != null) {
-                signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            // 正式发布请通过环境变量提供 KEYSTORE_*；本地测试回退到 debug 签名，
+            // 以便直接安装验证 release 包。
+            signingConfig = if (System.getenv("KEYSTORE_FILE") != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
             }
         }
     }
@@ -73,4 +89,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.documentfile:documentfile:1.0.1")
+    // 安装 Compose 等库自带的基线 profile，改善冷启动首帧（需在 release 中生效）。
+    implementation("androidx.profileinstaller:profileinstaller:1.3.1")
 }

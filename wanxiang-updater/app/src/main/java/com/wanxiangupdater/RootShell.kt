@@ -133,6 +133,38 @@ object RootShell {
         return code == 0
     }
 
+    /**
+     * 以 root 权限读取任意文件字节。
+     * 优先 base64（避免字符集/换行差异），失败时回退 UTF-8 文本。
+     */
+    fun readBytes(path: String): ByteArray? {
+        val (code, out) = runCatching { exec("base64 ${shellQuote(path)} 2>/dev/null") }
+            .getOrDefault(-1 to "")
+        if (code == 0 && out.isNotBlank()) {
+            val cleaned = out.filterNot { it.isWhitespace() }
+            runCatching {
+                android.util.Base64.decode(cleaned, android.util.Base64.DEFAULT)
+            }.getOrNull()?.let { return it }
+        }
+        val (fallbackCode, fallbackOut) = runCatching { exec("cat ${shellQuote(path)} 2>/dev/null") }
+            .getOrDefault(-1 to "")
+        if (fallbackCode != 0) return null
+        return fallbackOut.toByteArray(Charsets.UTF_8)
+    }
+
+    /** 以 root 权限写入文件字节，自动创建父目录。 */
+    fun writeBytes(path: String, bytes: ByteArray): Boolean {
+        val temp = runCatching { File.createTempFile("wxb_", ".tmp") }.getOrNull() ?: return false
+        return try {
+            temp.writeBytes(bytes)
+            val dest = File(path)
+            dest.parentFile?.let { if (!mkdirs(it.absolutePath)) return false }
+            copyFile(temp, dest)
+        } finally {
+            runCatching { temp.delete() }
+        }
+    }
+
     /** root 视角读取文件大小（字节）。失败返回 -1。 */
     fun fileSize(path: String): Long {
         val (code, out) = exec("wc -c < ${shellQuote(path)} 2>/dev/null")
